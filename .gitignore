@@ -1,0 +1,57 @@
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.key
+*token*
+*secret*
+*credential*
+~$*
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+
+# Runtime data and generated experiment artifacts
+data/interim/
+data/processed/
+outputs/
+*.pkl
+*.joblib
+*.npz
+*.xlsx
+*.zip
+
+# Public source data is tracked
+!data/raw/
+!data/raw/*.xlsx
+
+# Archived pre-refresh working copy
+/origin/
+
+# Local tooling and temporary working directories
+.codex-*
+.chart-data-*
+_ppt_build/
+.git/
+
+# Non-deliverable working copies and large raw artifacts
+00_raw_project/
+01_deterministic_eval/
+02_g2_bias_audit/
+03_reports/
+03_reports_v03/
+04_basic_report01/

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fair-returns"
+version = "0.1.0"
+description = "Country-invariant return-risk prediction for cross-border e-commerce using VIB + GRL"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scikit-learn>=1.3",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "openpyxl>=3.1",
+    "joblib>=1.3",
+    "requests>=2.31",
+    "flask>=3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/adantn/FairReturns-CDS521-Group14_Doubao"
+Repository = "https://github.com/adantn/FairReturns-CDS521-Group14_Doubao"
+
+[tool.setuptools.packages.find]
+include = ["fairreturn*"]
+
+[tool.setuptools]
+include-package-data = true

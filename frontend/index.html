@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fair Returns</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='8' width='24' height='18' rx='3' fill='%23172033'/%3E%3Cpath d='M4 13h24' stroke='%23eb6834' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="8" width="24" height="18" rx="3"/><path d="M4 13h24"/></svg>
+      <div>
+        <div class="brand-name">Fair Returns</div>
+        <div class="brand-sub">Return-risk scoring that does not depend on where the customer lives</div>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <a role="tab" href="#order" data-tab="order">Order check</a>
+      <a role="tab" href="#invoices" data-tab="invoices">Real invoices</a>
+      <a role="tab" href="#fairness" data-tab="fairness">Fairness results</a>
+      <a role="tab" href="#genai" data-tab="genai">GenAI audit</a>
+      <a role="tab" href="#about" data-tab="about">About</a>
+    </nav>
+    <div id="status" class="status" aria-live="polite"></div>
+  </header>
+
+  <main>
+    <!-- ============================================================ ORDER CHECK -->
+    <section id="tab-order" class="tab" data-tab="order">
+      <div class="order-layout">
+        <form id="order-form" class="slip" autocomplete="off">
+          <div class="slip-head">
+            <h2>Order line</h2>
+            <label class="example-picker">Load a real example
+              <select id="example-select"><option value="">Choose…</option></select>
+            </label>
+          </div>
+
+          <fieldset>
+            <legend>Product</legend>
+            <label class="wide">Search the catalogue
+              <input id="product-search" list="product-list" placeholder="e.g. glass, lantern, cake stand">
+              <datalist id="product-list"></datalist>
+            </label>
+            <div id="product-card" class="product-card" hidden></div>
+            <div class="row">
+              <label>Quantity <input id="quantity" type="number" min="1" step="1" value="6"></label>
+              <label>Unit price (£) <input id="unit-price" type="number" min="0.01" step="0.01" value="2.95"></label>
+            </div>
+            <div class="row">
+              <label>Products in basket <input id="basket-lines" type="number" min="1" step="1" value="24"></label>
+              <label>Basket value (£) <input id="basket-value" type="number" min="0" step="1" value="380"></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Customer history</legend>
+            <div class="segmented" role="radiogroup" aria-label="Customer type">
+              <label><input type="radio" name="ctype" value="returning" checked> Returning</label>
+              <label><input type="radio" name="ctype" value="new"> First order</label>
+            </div>
+            <div id="history-fields">
+              <div class="row">
+                <label>Earlier orders <input id="prior-invoices" type="number" min="0" value="8"></label>
+                <label>Items bought <input id="prior-items" type="number" min="0" value="190"></label>
+              </div>
+              <div class="row">
+                <label>Items returned <input id="prior-returns" type="number" min="0" value="2"></label>
+                <label>Customer for (days) <input id="tenure-days" type="number" min="0" value="300"></label>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Delivery</legend>
+            <div class="row">
+              <label>Customer country <select id="country"></select></label>
+              <label>Postage line on invoice
+                <select id="postage">
+                  <option value="auto">Usual for that country</option>
+                  <option value="1">Yes</option>
+                  <option value="0">No</option>
+                </select>
+              </label>
+            </div>
+            <label class="wide">Order date <input id="order-date" type="datetime-local" value="2011-11-15T11:30"></label>
+          </fieldset>
+
+          <div class="slip-actions">
+            <button type="submit" class="primary">Check order</button>
+            <label class="inline"><input id="move-proxies" type="checkbox" checked> Move postage with the country</label>
+          </div>
+        </form>
+
+        <div class="order-results">
+          <div class="compare-bar">
+            <label class="inline">Compare our model with <select id="compare-model" aria-label="Model to compare with"></select></label>
+          </div>
+          <div id="verdicts" class="verdicts"></div>
+
+          <article class="panel hero">
+            <header>
+              <h2>Same order, six addresses</h2>
+              <p class="lede">The risk each model gives this exact order if the customer lived in each country group. A fair model draws a flat line.</p>
+            </header>
+            <div id="cf-charts" class="cf-charts"><p class="empty">Fill in the order and choose “Check order”.</p></div>
+          </article>
+
+          <div class="two-col">
+            <article class="panel">
+              <header><h3>What drives the score</h3>
+                <p class="lede">Change in risk when each part of the order is replaced by an average order.</p></header>
+              <div id="factors"></div>
+            </article>
+            <article class="panel">
+              <header><h3>Suggested next step</h3>
+                <p class="lede">Uses only our model’s score and order facts. Country and postage are never shown to the assistant.</p></header>
+              <div id="assistant"><p class="empty">Appears after the check.</p></div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ REAL INVOICES -->
+    <section id="tab-invoices" class="tab" data-tab="invoices" hidden>
+      <div class="invoices-layout">
+        <aside class="panel invoice-list-panel">
+          <header><h2>Test-period invoices</h2>
+            <p class="lede">Real orders from Jun–Oct 2011 that no model saw during training.</p></header>
+          <div class="filters">
+            <select id="inv-group" aria-label="Country group"><option value="">All countries</option></select>
+            <select id="inv-return" aria-label="Returns">
+              <option value="">Any outcome</option><option value="1">Had a return</option><option value="0">No return</option>
+            </select>
+            <select id="inv-sort" aria-label="Sort invoices">
+              <option value="country_effect">Most affected by the country first</option><option value="">By date</option>
+            </select>
+            <input id="inv-q" placeholder="Invoice or customer id" aria-label="Search invoices">
+          </div>
+          <div id="inv-list" class="inv-list"></div>
+          <div class="pager"><button id="inv-prev" class="ghost">Previous</button><span id="inv-page"></span><button id="inv-next" class="ghost">Next</button></div>
+        </aside>
+        <article class="panel invoice-detail">
+          <div id="inv-detail"><p class="empty">Choose an invoice to see the risk of every line.</p></div>
+        </article>
+      </div>
+      <article class="panel">
+        <header><h2>Score your own orders</h2>
+          <p class="lede">Upload a CSV in the Online Retail format (Invoice, StockCode, Description, Quantity, InvoiceDate, Price, Customer ID, Country), up to 20,000 rows. Known customers get their history from the data; a blank Customer ID counts as a first order. Postage lines are read but only the country-aware and country-removed models use them.</p></header>
+        <div class="upload-row">
+          <input id="csv-file" type="file" accept=".csv,text/csv" aria-label="CSV file">
+          <button id="csv-score" type="button" class="primary">Score file</button>
+          <button id="csv-sample" type="button" class="ghost">Try the sample file</button>
+          <a id="csv-download" class="button-link" hidden>Download scored CSV</a>
+        </div>
+        <div id="csv-result"></div>
+      </article>
+    </section>
+
+    <!-- ============================================================ FAIRNESS -->
+    <section id="tab-fairness" class="tab" data-tab="fairness" hidden>
+      <article class="panel">
+        <header><h2>False alarms by country</h2>
+          <p class="lede">Share of order lines that were <em>not</em> returned but were still flagged high-risk. The harm we target: customers who behave the same being flagged at different rates because of where they live.</p></header>
+        <div id="fpr-chart"></div>
+        <p id="fpr-note" class="note"></p>
+      </article>
+      <article class="panel">
+        <header><h2>All methods on the test period</h2>
+          <p class="lede">Mean ± standard deviation over seeds. ΔFPR and ΔTPR are the largest gaps between country groups.</p></header>
+        <div id="results-table" class="table-wrap"></div>
+        <p id="results-note" class="note"></p>
+      </article>
+      <article class="panel">
+        <header><h2>Figures</h2><p class="lede">The same figures used in the report, from outputs/figures.</p></header>
+        <div id="figure-gallery" class="gallery"></div>
+      </article>
+    </section>
+
+    <!-- ============================================================ GENAI -->
+    <section id="tab-genai" class="tab" data-tab="genai" hidden>
+      <div id="genai-banner"></div>
+      <article class="panel">
+        <header><h2>Does an LLM also judge by country?</h2>
+          <p class="lede">Each audited order is sent twice, as it happened and with only the customer’s country changed, under four prompts. Ideally the answer does not move.</p></header>
+        <div id="audit-summary"></div>
+      </article>
+      <div class="invoices-layout">
+        <aside class="panel">
+          <header><h3>Audited pairs</h3><p class="lede">Sorted by how far the plain prompt moved.</p></header>
+          <div id="pair-list" class="inv-list"></div>
+        </aside>
+        <article class="panel">
+          <div id="pair-detail"><p class="empty">Choose a pair to read the answers.</p></div>
+        </article>
+      </div>
+      <article class="panel">
+        <header><h2>LLM-generated product attributes</h2>
+          <p class="lede">An LLM labels each product’s category, material, fragility and season from its description. Fragile items are returned more than twice as often (4.0% vs 1.7% of training lines), so the labels are model features; their value is measured by the “without product tags” ablation. The LLM labels are checked against keyword rules and against human labels.</p></header>
+        <div id="tag-eval"></div>
+      </article>
+    </section>
+
+    <!-- ============================================================ ABOUT -->
+    <section id="tab-about" class="tab" data-tab="about" hidden>
+      <div class="two-col">
+        <article class="panel"><header><h2>Data</h2></header><div id="about-data"></div></article>
+        <article class="panel"><header><h2>Method</h2></header>
+          <ol class="steps">
+            <li><strong>Find the return.</strong> Each cancellation (“C” invoice) is matched to the customer’s latest earlier purchase of the same product; a line counts as returned if that happens within 60 days.</li>
+            <li><strong>Describe the order without looking ahead.</strong> Customer and product history use only days before the order. Product descriptions are tagged for category, material, fragility and season.</li>
+            <li><strong>Leave out what the address decides.</strong> The country and the postage line (charged by destination) are never inputs. Left in, postage leaks the country, and an adversary even teaches the model to use it in reverse.</li>
+            <li><strong>Learn a compressed representation.</strong> A variational information bottleneck encodes each order into 16 numbers that predict the return.</li>
+            <li><strong>Make it forget the country that is left.</strong> Customer history and order timing still reveal the country. An adversary tries to read the country group from the 16 numbers; gradient reversal trains the encoder to defeat it, given the true outcome (equalized odds).</li>
+            <li><strong>Check honestly.</strong> Time-based test set, counterfactual twins, false-alarm and hit-rate gaps, and a fresh probe classifier that tries to recover the country.</li>
+          </ol>
+        </article>
+      </div>
+      <div class="two-col">
+        <article class="panel"><header><h2>Limitations</h2></header>
+          <ul class="plain">
+            <li>Returns are inferred from cancellation invoices; same-day cancellations are included and some returns may be matched to the wrong earlier purchase.</li>
+            <li>Country is the customer’s registered country of residence, not nationality. Several groups contain few customers (EIRE: three), so their rates are noisy.</li>
+            <li>The adversary removes some, not all, country information: a fresh probe can still recover part of it from the representation.</li>
+            <li>Equal false-alarm rates and per-country calibration cannot both hold when true return rates differ; we choose the former and report the latter.</li>
+            <li>The pressure to equalise error rates can under-rate individual customers whose orders look typical of one country, even when their own history is risky (invoice 556578 is an example); overall calibration by past return rate stays good.</li>
+            <li>Fairness costs some accuracy: our model’s AUC is a little below the country-aware GBDT’s (see Fairness results).</li>
+            <li>LLM results depend on the model, prompt and date of the run, and on a small audit sample.</li>
+          </ul>
+        </article>
+        <article class="panel"><header><h2>API</h2></header><div id="about-api"></div></article>
+      </div>
+    </section>
+  </main>
+
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
